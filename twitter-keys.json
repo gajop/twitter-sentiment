@@ -12,5 +12,40 @@
         "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
         "token": "3009598734-7UU0gP9CsfOXO9kKZkPRhlidglmq8bD6JTo8JSS",
         "tokenSecret": "aPegZ3u23VCGXNCIGHFlpNyAnushklHY7ceEUwYQkboNe"
+    },
+	{
+        "handle": "testsentiment2",
+        "key": "RK6DGmjlHBiyFgVmJwWhqX4e6",
+        "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
+        "token": "3016666921-khLjt9jY9NnWcIoKnx44Xv44ocSZbHzIupwKTPH",
+        "tokenSecret": "cZSdlaRvnVfy7IR8dO4IzD768nve9MsLncMFXKqborTl8"
+    },
+	{
+        "handle": "testsentiment3",
+        "key": "RK6DGmjlHBiyFgVmJwWhqX4e6",
+        "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
+		"token":  "3029624585-rTDVFqQrjMDcQT5kiLQ8X1CT0sf6SKSuxFcpG3k",
+		"tokenSecret":   "zpXSV89abmwXlSGMZnTV8PNBiL03Tq5SSBSCP58Nt5pac"
+    },
+	{
+        "handle": "testsentiment4",
+        "key": "RK6DGmjlHBiyFgVmJwWhqX4e6",
+        "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
+		"token":  "3029634155-7ax5BKXEXZFWsAABlnQhZOAj3PMWVw6tfnm6Fn4",
+		"tokenSecret":   "ZDGxTMzEmq6sTH1U4EjcD7QH46YtatyFvImWNFsjmSONg"
+    },
+	{
+        "handle": "testsentiment5",
+        "key": "RK6DGmjlHBiyFgVmJwWhqX4e6",
+        "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
+        "token":  "3029683558-2oDisfXnNPPUeEUPOd5em2yCQNzfyeoQ0UjKRoj",
+		"tokenSecret":   "ngYaTpIfT80IwKPQu9GXVa3EGnBp7s8ZLD0Rvp0KYa8TJ"
+    },
+	{
+        "handle": "testsentiment6",
+        "key": "RK6DGmjlHBiyFgVmJwWhqX4e6",
+        "keySecret": "sjlBLoiU38szzJu5cpCztFiFZG3Wgq2nhFOhMLFlQWxJ7n9w95",
+		"token":  "3029652893-8uCuNy9DIJhwt1ljSIcEtnxThr5jBHWOxQRwoXD",
+		"tokenSecret":   "nvuuMKXU4NS1jihmsFMYMv7plrzG8BeTwc9YBTWQL6DGS"
     }
 ]

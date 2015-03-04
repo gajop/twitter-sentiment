@@ -1,7 +1,6 @@
 package jp.ac.iwatepu.twitter;
 
 import java.io.FileReader;
-import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -85,10 +84,10 @@ public class TwitterManager {
 	}
 
 	public boolean canUse(RateLimitStatusWrapper rls) {		
-		if (!(rls.getRemaining() > 0 || rls.getSecondsUntilReset() == 0)) {
+		/*if (!(rls.getRemaining() > 0 || rls.getSecondsUntilReset() <= 0)) {
 			System.out.println("can't use:  " + rls.getSecondsUntilReset());
-		}
-		return rls.getRemaining() > 0 || rls.getSecondsUntilReset() == 0;	
+		}*/
+		return rls.getRemaining() > 0 || rls.getSecondsUntilReset() <= 0;	
 	}
 	
 	public enum AccessType { followers, friends, status } ;
@@ -120,6 +119,10 @@ public class TwitterManager {
 			}	
 			twitterAccessLock.unlock();
 			try {
+				if (waitTime < 0) {
+				    System.out.println("wait time is negative " + waitTime);
+				}
+				waitTime = Math.max(waitTime, 1);
 				log.info("Waiting: " + waitTime + " seconds. (" + accessType + ")");				
 				Thread.sleep(waitTime * 1000);				
 			} catch (InterruptedException e) {
@@ -159,14 +162,14 @@ public class TwitterManager {
 		return ids;
 	}
 	
-	public ResponseList<Status> _getTweets(Twitter twitter, long userId) throws TwitterException {		
-		return twitter.getUserTimeline(userId);
+	public ResponseList<Status> _getTweets(Twitter twitter, long userId, int page) throws TwitterException {		
+		return twitter.getUserTimeline(userId, new Paging(page));
 	}
-	public ResponseList<Status> getTweets(long userId) throws TwitterException {
+	public ResponseList<Status> getTweets(long userId, int page) throws TwitterException {
 		ResponseList<Status> tweets;
 		try {
 			Twitter twitter = getTwitterAccess(AccessType.status).getTwitter();
-			tweets = _getTweets(twitter, userId);
+			tweets = _getTweets(twitter, userId, page);
 		} finally {
 			twitterAccessLock.unlock();
 		}

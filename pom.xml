@@ -11,9 +11,24 @@
       <version>2.2.0</version> <!-- or whatever the latest version is -->
     </dependency>
     <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>hbc-twitter4j</artifactId> <!-- or hbc-twitter4j -->
+      <version>2.2.0</version> <!-- or whatever the latest version is -->
+    </dependency>
+    <dependency>
        <groupId>org.twitter4j</groupId>
        <artifactId>twitter4j-core</artifactId>
        <version>[4.0,)</version>
+    </dependency>
+    <dependency>
+       <groupId>org.twitter4j</groupId>
+       <artifactId>twitter4j-stream</artifactId>
+       <version>[4.0,)</version>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.commons</groupId>
+       <artifactId>commons-lang3</artifactId>
+       <version>3.3.2</version>
     </dependency>
     <dependency>
 		<groupId>org.postgresql</groupId>

@@ -46,8 +46,8 @@ public class TwitterObtainKeys {
 	private static void storeAccessToken(AccessToken accessToken){
 		// TODO: append to twitter-keys.json.. or just print it and I can copy/paste it then?
 		System.out.println(
-				"\"handle\":  \"" + accessToken.getScreenName() + "\"\n" +
-				"\"token\":  \"" + accessToken.getToken() + "\"\n" +
-				"\"tokenSecret\":   \"" + accessToken.getTokenSecret() + "\n");
+				"\"handle\":  \"" + accessToken.getScreenName() + "\",\n" +
+				"\"token\":  \"" + accessToken.getToken() + "\",\n" +
+				"\"tokenSecret\":   \"" + accessToken.getTokenSecret() + "\"\n");
 	}
 }

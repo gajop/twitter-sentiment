@@ -1,11 +1,11 @@
-package jp.ac.iwatepu.twittercrawler.rest;
+package jp.ac.iwatepu.twitter;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 
-import jp.ac.iwatepu.twittercrawler.stream.SQLConnector;
+import jp.ac.iwatepu.db.SQLConnector;
 import twitter4j.Status;
 import twitter4j.TwitterObjectFactory;
 
@@ -65,7 +65,7 @@ public class JSONParser {
 	    	if (processed % 100 == 0) {
 	    		System.out.println("Processed : " + processed);
 	    	}
-	    	SQLConnector.getInstance().insertStatus(status);	    	
+	    	SQLConnector.getInstance().insertStatus(status, true);	    	
 	    }	    	 
 
     	/*User user = status.getUser();
