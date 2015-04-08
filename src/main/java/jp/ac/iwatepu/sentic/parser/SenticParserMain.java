@@ -3,11 +3,13 @@ package jp.ac.iwatepu.sentic.parser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.Lists;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -106,17 +108,17 @@ public class SenticParserMain {
 	private Sentiment extractSentiment(String text) throws IOException {
 		Sentiment sentiment = null;
 		ArrayList<String> concepts = cp.get_concepts(text);
-		System.out.print("CONCEPTS:");
+		//System.out.print("CONCEPTS:");
 		for (String concept : concepts) {
-			System.out.print(" \"" + concept + "\"");
+			//System.out.print(" \"" + concept + "\"");
 		}
-		System.out.println();
+		//System.out.println();
 		List<Sentiment> allSents = new LinkedList<Sentiment>();
 		for (String concept : concepts) {
 			Sentiment newSentiment = searchConcept(concept);
 			if (newSentiment != null) {
 				sentiment = newSentiment;
-				System.out.println("\n!!!" + concept + ": " + newSentiment);
+				//System.out.println("\n!!!" + concept + ": " + newSentiment);
 			} else {
 				List<Sentiment> pSents = new LinkedList<Sentiment>();
 				for (String p : concept.split(" ")) {
@@ -124,67 +126,183 @@ public class SenticParserMain {
 					if (newSentiment != null) {
 						pSents.add(newSentiment);
 					}
-					System.out.println("\n" + p + ": " + newSentiment);
+					//System.out.println("\n" + p + ": " + newSentiment);
 				}
 				newSentiment = avgSentiment(pSents);
 			}
 			if (newSentiment != null) {
 				allSents.add(newSentiment);
 			}
-			System.out.print(concept + ":" + searchConcept(concept) + " ");
+			//System.out.print(concept + ":" + searchConcept(concept) + " ");
 		}
 		sentiment = avgSentiment(allSents);
 		return sentiment;		
 	}
 	
-	private List<String> extractTopics(String text) {
+	private List<String> extractHashtags(String text) {
 		List<String> allMatches = new ArrayList<String>();
 		Matcher m = Pattern.compile("#[A-Za-z0-9]+").matcher(text);
 		while (m.find()) {
-			allMatches.add(m.group().toLowerCase());
+			allMatches.add(m.group().substring(1));
 		}
 		return allMatches;
 	}
 
 	public void run() throws Exception {		
 		loadSenticNet();
-		for (DBStatus tweet: SQLConnector.getInstance().getTweets()) {
+		List<Topic> searchTopics = new LinkedList<Topic>();
+		searchTopics.add(new Topic("Obama, GOP", Arrays.asList(new String[] {"obama"}), Arrays.asList(new String[] {"gop"}),
+				Arrays.asList(new String[] {"UniteBlue", "p2", "ObamaLovesAmerica", "SOTU", "ILoveObama"}),
+				Arrays.asList(new String[] {"tcot", "pjnet", "ccot", "teaparty", "RedNationRising"})
+		));
+		searchTopics.add(new Topic("Net Neutrality", Arrays.asList(new String[] {"net neutrality", "netneutrality"}), Arrays.asList(new String[] {}),
+				Arrays.asList(new String[] {"SaveOurNet", "NetNeutrality"}),
+				Arrays.asList(new String[] {"NoNetNeutrality"})
+		));
+		searchTopics.add(new Topic("Gun control", Arrays.asList(new String[] {"gun control"}), Arrays.asList(new String[] {}),
+				Arrays.asList(new String[] {}),
+				Arrays.asList(new String[] {"2A"})
+		));
+		searchTopics.add(new Topic("Obama care", Arrays.asList(new String[] {"obama care", "obamacare"}), Arrays.asList(new String[] {}),
+				Arrays.asList(new String[] {}),
+				Arrays.asList(new String[] {})
+		));
+		long [] foundCount = new long [] {0,0,0,0};
+		long [] polarityChanged = new long [] {0,0,0,0};
+		long [] mixedSearch = new long [] {0,0,0,0};
+		long [] posSearch = new long [] {0,0,0,0};
+		long [] negSearch = new long [] {0,0,0,0};
+		
+		long [] mixedHashtag = new long [] {0,0,0,0};
+		long [] posHashtag = new long [] {0,0,0,0};
+		long [] negHashtag = new long [] {0,0,0,0};
+		
+		long done = -1;
+		DBStatus[] tweets = SQLConnector.getInstance().getTweets();
+		for (DBStatus tweet: tweets) {
 			try {
+				if (done % 1000 == 0) {
+					System.out.println("Progress: " + done + "/" + tweets.length);
+				}
+				done++;				
+				if (tweet.isRetweet()) {
+					//continue;
+				}
+				
 				String text = tweet.getText();
-				System.out.println(text);
-				String searchTopic = "obama";
-				if (!text.toLowerCase().contains(searchTopic)) {
-					System.out.println("Skip tweet");
+				//System.out.println(text);
+				String lowercase = text.toLowerCase();
+				List<String> hashtags = extractHashtags(text);
+				
+				List<Integer> matchingTopics = new LinkedList<Integer>();
+				boolean [] posFound = new boolean[searchTopics.size()];
+				boolean [] negFound = new boolean[searchTopics.size()];
+				boolean [] posHashtagFound = new boolean[searchTopics.size()];
+				boolean [] negHashtagFound = new boolean[searchTopics.size()];
+				for (int i = 0; i < searchTopics.size(); i++) {
+					Topic searchTopic = searchTopics.get(i);
+					boolean found = false;					
+					for (String topicSearch : searchTopic.getTopicSearch()) {
+						if (lowercase.contains(topicSearch.toLowerCase())) {
+							posFound[i] = true;
+							found = true;
+							break;
+						}
+					}
+					for (String topicSearch : searchTopic.getNegativeTopicSearch()) {
+						if (lowercase.contains(topicSearch.toLowerCase())) {
+							negFound[i] = true;
+							found = true;			
+							break;
+						}
+					}	
+					for (String hashtag : hashtags) {					
+						for (String posSearchHashTag : searchTopic.getSentimentHashtags()) {
+							if (hashtag.toLowerCase().equals(posSearchHashTag.toLowerCase())) {
+								posHashtagFound[i] = true;
+								found = true;
+								break;
+							}
+						}
+						for (String negSearchHashTag : searchTopic.getNegativeSentimentHashtags()) {
+							if (hashtag.toLowerCase().equals(negSearchHashTag.toLowerCase())) {
+								negHashtagFound[i] = true;
+								found = true;								
+								break;
+							}
+						}
+					}
+					if (found) {						
+						matchingTopics.add(i);
+						foundCount[i]++;
+						if (posFound[i] && negFound[i]) {
+							mixedSearch[i]++;
+						}
+						if (posHashtagFound[i] && negHashtagFound[i]) {
+							mixedHashtag[i]++;
+						} else if (posHashtagFound[i]) {
+							posHashtag[i]++;	
+						} else if (negHashtagFound[i]) {
+							negHashtag[i]++;
+						}
+						if (posFound[i] && negFound[i]) {
+							mixedSearch[i]++;
+						} else if (posFound[i]) {
+							posSearch[i]++;	
+						} else if (negFound[i]) {
+							negSearch[i]++;
+						}					
+					}
+				}
+				if (matchingTopics.isEmpty()) {
 					continue;
 				}
+				//System.out.println(text);
 	
 				Sentiment sentiment = extractSentiment(text);
-				List<String> topics = extractTopics(text);
-				System.out.println();
 				
-				System.out.println("Tweet Sentiment: " + sentiment);
+				//System.out.println();
+				
+				//System.out.println("Tweet Sentiment: " + sentiment);
 				if (sentiment != null) {
-					for (String topic : topics) {
-						System.out.println("TOPIC: " + topic);
-					}
-					if (topics.contains(searchTopic) || text.toLowerCase().contains(searchTopic)) {
-						System.out.println("Topic exists: " + searchTopic);
-						SQLConnector.getInstance().insertStatusSentiment(tweet.getStatusId(), sentiment, searchTopic);
+					for (int i = 0; i < matchingTopics.size(); i++) {
+						Topic topic = searchTopics.get(matchingTopics.get(i));
+						Sentiment s = new Sentiment();
+						s.setAptitude(sentiment.getAptitude());
+						s.setAttention(sentiment.getAttention());
+						s.setSensitivity(sentiment.getSensitivity());
+						s.setPleasantness(sentiment.getPleasantness());
+						s.setPolarity(sentiment.getPolarity());
+						
+						if (negHashtagFound[i]) {
+							s.polarity -= 0.5;
+						}
+						if (posHashtagFound[i]) {
+							s.polarity += 0.5;
+						}
+						
+						if (negFound[i] && !posFound[i]) {
+							s.polarity = -s.polarity;
+						}
+						s.polarity = Math.max(-1, s.polarity);
+						s.polarity = Math.min(1, s.polarity);
+						if (s.polarity != sentiment.polarity) {
+							polarityChanged[i]++;
+						}
+						SQLConnector.getInstance().insertStatusSentiment(tweet.getStatusId(), s, topic.getTopic());
 					}
 				}
-				/*if (sentiment != null && !topics.isEmpty()) {
-					for (String topic : topics) {
-						//SQLConnector.getInstance().insertStatusSentiment(tweet.getStatusId(), sentiment, topic);
-					}
-				}*/
-				
-				System.out.println("=========================");
-				//cp.display_concepts(concepts.toArray(new String[concepts.size()]));
-				//semantic_parser.concept_parser.display_concepts(new String[] {tweet});
-				//semantic_parser.concept_parser.
+
+				//System.out.println("=========================");
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
+		}
+		for (int i = 0; i < 4; i++) {
+			Topic topic = searchTopics.get(i);
+			System.out.println("Topic: " + topic.getTopic() + " matched: " + foundCount[i] + 
+					", positive hashtags: " + posHashtag[i] + ", negative hashtags: " + negHashtag[i] + ", mixed hashtags: " + mixedHashtag[i]  + 
+					", positive search: " + posSearch[i] + ", negative search: " + negSearch[i] + ", mixed search: " + mixedSearch[i] + ", polarity changed: " + polarityChanged[i]);			
 		}
 		//semantic_parser.concept_parser.display_concepts(new String[] {"abcd"});
 	} 

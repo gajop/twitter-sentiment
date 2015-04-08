@@ -357,11 +357,19 @@ public class SQLConnector {
 		Vector<DBStatus> tweets = new Vector<DBStatus>();
 		Statement statement = getConnection().createStatement();
 		
-		ResultSet rs = statement.executeQuery("SELECT id, text, user_id from twitter_status");
+		ResultSet rs = statement.executeQuery("SELECT id, text, user_id, isRetweet, isRetweeted, retweetedStatusId, retweetedStatusIdUserHandle, retweetedStatusIdUserId from twitter_status");
 		while (rs.next()) {
 			DBStatus status = new DBStatus(rs.getLong(1), rs.getString(2));
 			status.setUserId(rs.getLong(3));
-			tweets.add(status);			
+			status.setRetweet(rs.getBoolean(4));
+			status.setRetweeted(rs.getBoolean(5));
+			if (status.isRetweet()) {
+				status.setRetweetedStatusId(rs.getLong(6));
+				status.setRetweetedStatusIdUserHandle(rs.getString(7));
+				status.setRetweetedStatusIdUserId(rs.getLong(8));				
+			}
+			
+			tweets.add(status);
 		}
 		return tweets.toArray(new DBStatus[tweets.size()]);
 	}
@@ -399,7 +407,7 @@ public class SQLConnector {
 		Vector<UserSentiment> userSents = new Vector<UserSentiment>();
 		Statement statement = getConnection().createStatement();
 		
-		ResultSet rs = statement.executeQuery("SELECT user_id, topic, polarity, pleasantness, attention, sensitivity, aptitude from twitter_status_sentiment, twitter_status where id=status_id");
+		ResultSet rs = statement.executeQuery("SELECT user_id, topic, polarity, pleasantness, attention, sensitivity, aptitude, num_tweets from twitter_user_profile");
 		while (rs.next()) {
 			UserSentiment us = new UserSentiment();
 			us.setUserId(rs.getLong(1));
@@ -407,6 +415,7 @@ public class SQLConnector {
 			us.setSentiment(new Sentiment(rs.getDouble(3), rs.getDouble(4), rs.getDouble(5), rs.getDouble(6), rs.getDouble(7)));
 			
 			userSents.add(us);
+			us.setNumTweets(rs.getLong(8));
 		}
 		return userSents.toArray(new UserSentiment[userSents.size()]);
 	}
@@ -425,18 +434,43 @@ public class SQLConnector {
 		preparedStatement.setDouble(7, sentiment.getAptitude());
 		preparedStatement.execute();
 	}
-	public void insertUserSentiment(long userId, Sentiment sentiment, String topic) throws SQLException {		
+	public void insertUserSentiment(UserSentiment us) throws SQLException {		
 		String insertTableSQL = "INSERT INTO twitter_user_profile "
-				+ "(user_id, topic, polarity, pleasantness, attention, sensitivity, aptitude) VALUES "
-				+ "(?,?,?,?,?,?,?)";
+				+ "(user_id, topic, polarity, pleasantness, attention, sensitivity, aptitude, num_tweets) VALUES "
+				+ "(?,?,?,?,?,?,?,?)";
 		PreparedStatement preparedStatement = getConnection().prepareStatement(insertTableSQL);
-		preparedStatement.setLong(1, userId);
-		preparedStatement.setString(2, topic);
+		preparedStatement.setLong(1, us.getUserId());
+		preparedStatement.setString(2, us.getTopic());
+		Sentiment sentiment = us.getSentiment();
 		preparedStatement.setDouble(3, sentiment.getPolarity());
 		preparedStatement.setDouble(4, sentiment.getPleasantness());
 		preparedStatement.setDouble(5, sentiment.getAttention());
 		preparedStatement.setDouble(6, sentiment.getSensitivity());
 		preparedStatement.setDouble(7, sentiment.getAptitude());
+		preparedStatement.setLong(8, us.getNumTweets());
+		preparedStatement.execute();
+	}
+
+	public void insertRetweet(long userId, long retweetUserId, long statusId, long retweetedStatusId) throws SQLException {
+		String insertTableSQL = "INSERT INTO twitter_retweets"
+				+ "(user_id, retweet_user_id, status_id, retweet_status_id) VALUES"
+				+ "(?,?,?,?)";
+		PreparedStatement preparedStatement = getConnection().prepareStatement(insertTableSQL);	
+				
+		preparedStatement.setLong(1, userId);
+		preparedStatement.setLong(2, retweetUserId);
+		preparedStatement.setLong(3, statusId);
+		preparedStatement.setLong(4, retweetedStatusId);
+		preparedStatement.execute();
+	}
+
+	public void insertStatusSentimentCleanse(long statusId, String topic) throws SQLException {
+		String insertTableSQL = "INSERT INTO twitter_status_sentiment_cleanse "
+				+ "(status_id, topic) VALUES "
+				+ "(?,?)";
+		PreparedStatement preparedStatement = getConnection().prepareStatement(insertTableSQL);
+		preparedStatement.setLong(1, statusId);
+		preparedStatement.setString(2, topic);
 		preparedStatement.execute();
 	}
 	

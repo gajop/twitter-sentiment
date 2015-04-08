@@ -1,12 +1,15 @@
 package jp.ac.iwatepu.sentic.parser;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import jp.ac.iwatepu.db.SQLConnector;
 import jp.ac.iwatepu.twitter.model.TweetSentiment;
 import jp.ac.iwatepu.twitter.model.TwitterUserNode;
+import jp.ac.iwatepu.twitter.model.UserSentiment;
 
 public class UserAggregator {
 	HashMap<Long, List<TweetSentiment>> idMapping = new HashMap<Long, List<TweetSentiment>>();
@@ -17,23 +20,41 @@ public class UserAggregator {
 		ua.run();
 	}
 	
-	private Sentiment avgSentiment(List<TweetSentiment> pSents) {
+	private Collection<UserSentiment> avgSentiment(List<TweetSentiment> pSents) {
 		if (!pSents.isEmpty()) {
-			Sentiment newSentiment = new Sentiment();
+			HashMap<String, UserSentiment> res = new HashMap<String, UserSentiment>();
+			
 			for (TweetSentiment ts: pSents) {
+				if (!res.containsKey(ts.getTopic())) {
+					UserSentiment us = new UserSentiment();
+					us.setUserId(ts.getUserId());
+					us.setSentiment(new Sentiment());
+					us.setTopic(ts.getTopic());
+					us.setNumTweets(0);
+					res.put(ts.getTopic(), us);
+				}
+				UserSentiment us = res.get(ts.getTopic());
+				Sentiment sent = us.getSentiment();
+				us.setNumTweets(us.getNumTweets() + 1);
+				
 				Sentiment s = ts.getSentiment();
-				newSentiment.setAptitude(newSentiment.getAptitude() + s.getAptitude());
-				newSentiment.setAttention(newSentiment.getAttention() + s.getAttention());
-				newSentiment.setSensitivity(newSentiment.getSensitivity() + s.getSensitivity());
-				newSentiment.setPleasantness(newSentiment.getPleasantness() + s.getPleasantness());
-				newSentiment.setPolarity(newSentiment.getPolarity() + s.getPolarity());
+				sent.setAptitude(sent.getAptitude() + s.getAptitude());
+				sent.setAttention(sent.getAttention() + s.getAttention());
+				sent.setSensitivity(sent.getSensitivity() + s.getSensitivity());
+				sent.setPleasantness(sent.getPleasantness() + s.getPleasantness());
+				sent.setPolarity(sent.getPolarity() + s.getPolarity());
 			}
-			newSentiment.setAptitude(newSentiment.getAptitude() / pSents.size());
-			newSentiment.setAttention(newSentiment.getAttention() / pSents.size());
-			newSentiment.setSensitivity(newSentiment.getSensitivity() / pSents.size());
-			newSentiment.setPleasantness(newSentiment.getPleasantness() / pSents.size());
-			newSentiment.setPolarity(newSentiment.getPolarity() / pSents.size());
-			return newSentiment;
+			for (Entry<String, UserSentiment> entrySet : res.entrySet()) {
+				UserSentiment us = entrySet.getValue();
+				Sentiment s = us.getSentiment();
+				s.setAptitude(s.getAptitude() / us.getNumTweets());
+				s.setAttention(s.getAttention() / us.getNumTweets());
+				s.setSensitivity(s.getSensitivity() / us.getNumTweets());
+				s.setPleasantness(s.getPleasantness() / us.getNumTweets());
+				s.setPolarity(s.getPolarity() / us.getNumTweets());
+			}
+			
+			return res.values();
 		}
 		return null;
 	}
@@ -48,17 +69,25 @@ public class UserAggregator {
 			sents.add(ts);
 		}
 		System.out.println("Tweet sentiments: " + tweetSents.length);
-		int pos = 0;
-		int neg = 0;
+		HashMap<String, Integer> pos = new HashMap<String, Integer>();
+		HashMap<String, Integer> neg = new HashMap<String, Integer>();
 		for (List<TweetSentiment> sents : idMapping.values()) {
-			Sentiment s = avgSentiment(sents);
-			if (s.getPolarity() > 0) {
-				pos++;
-			} else {
-				neg++;
+			for (UserSentiment us : avgSentiment(sents)) {
+				if (!pos.containsKey(us.getTopic())) {
+					pos.put(us.getTopic(), 0);
+					neg.put(us.getTopic(), 0);
+				}
+				Sentiment s = us.getSentiment();
+				if (s.getPolarity() > 0) {
+					pos.put(us.getTopic(), pos.get(us.getTopic()) + 1);
+				} else {
+					neg.put(us.getTopic(), neg.get(us.getTopic()) + 1);
+				}
+				SQLConnector.getInstance().insertUserSentiment(us);
+				System.out.println(us.getUserId() + ": " + sents.size() + ", sentiment: " + s);
 			}
-			SQLConnector.getInstance().insertUserSentiment(sents.get(0).getUserId(), s, sents.get(0).getTopic());
-			System.out.println(sents.get(0).getUserId() + ": " + sents.size() + ", sentiment: " + s);
+			
+			
 		}
 		System.out.println("Positive: " + pos + ", negative: " + neg);
 	}

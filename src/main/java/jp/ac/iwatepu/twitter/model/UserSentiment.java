@@ -6,7 +6,14 @@ public class UserSentiment {
 	Sentiment sentiment;
 	String topic;
 	long userId;
+	long numTweets;
 	
+	public long getNumTweets() {
+		return numTweets;
+	}
+	public void setNumTweets(long numTweets) {
+		this.numTweets = numTweets;
+	}
 	public Sentiment getSentiment() {
 		return sentiment;
 	}

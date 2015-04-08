@@ -107,10 +107,11 @@ CREATE TABLE twitter_friends
 
 CREATE TABLE twitter_retweets
 (
-    user_id BIGINT,
-    retweet_user_id BIGINT,
-    status_id BIGINT
-);
+  user_id bigint,
+  retweet_user_id bigint,
+  status_id bigint,
+  retweet_status_id bigint
+)
 
 CREATE TABLE twitter_status_sentiment
 (
@@ -127,6 +128,7 @@ CREATE TABLE twitter_user_profile
 (
     user_id BIGINT,
     topic VARCHAR(80),
+    num_tweets BIGINT,
     polarity NUMERIC,
     pleasantness NUMERIC, 
     attention NUMERIC, 

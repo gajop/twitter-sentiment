@@ -1,7 +1,10 @@
 package jp.ac.iwatepu.twitter.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import jp.ac.iwatepu.sentic.parser.Sentiment;
 
@@ -10,7 +13,8 @@ public class TwitterUserNode extends DBUser {
 	List<Long> friends = new ArrayList<Long>();
 	List<Retweet> retweets = new ArrayList<Retweet>();
 	List<Reply> replies = new ArrayList<Reply>();
-	Sentiment sent;
+	List<UserSentiment> sents = new LinkedList<UserSentiment>();
+	Set<Long> related;
 	
 	public TwitterUserNode(long id, String screenName, String description,
 			int friendCount, int followerCount, int recursionLevel) {
@@ -49,13 +53,37 @@ public class TwitterUserNode extends DBUser {
 		this.replies = replies;
 	}
 
-	public Sentiment getSent() {
-		return sent;
+	public List<UserSentiment> getSents() {
+		return sents;
 	}
 
-	public void setSent(Sentiment sent) {
-		this.sent = sent;
+	public void setSents(List<UserSentiment> sents) {
+		this.sents = sents;
 	}
 	
+	public Set<Long> getRelated() {
+		if (related == null) {
+			related = new HashSet<Long>();
+			related.addAll(friends);
+			related.addAll(followers);
+//			System.out.println();
+//			System.out.println("RETWEETS");
+//			System.out.println();
+			for (Retweet rt : retweets) {
+				long userId = rt.getRetweetedStatusIdUserId();
+//				System.out.println(userId + " " + id);
+				related.add(userId);
+			}
+//			System.out.println();
+//			System.out.println("REPLIES: ");
+//			System.out.println();
+			for (Reply re : replies) {
+				long userId = re.getReplyToUserId();
+//				System.out.println(userId + " " + id);
+				related.add(userId);
+			}
+		}
+		return related;
+	}
 	
 }
